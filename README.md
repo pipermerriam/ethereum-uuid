@@ -36,6 +36,16 @@ https://en.wikipedia.org/wiki/Universally_unique_identifier
 contract UUIDProvider {
     function UUID4() returns (bytes16 uuid);
 }
+
+
+contract ExampleContract {
+    uuidProvider = UUIDProvider(0xbb17fcd3f0be84478c4772cdb1035089aa36d4d1);
+
+    function doSomething() {
+        var id = uuidProvider.UUID4();
+        ...
+    }
+}
 ```
 
 
