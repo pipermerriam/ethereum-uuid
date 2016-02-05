@@ -6,6 +6,8 @@ Available @ `0xbb17fcd3f0be84478c4772cdb1035089aa36d4d1`
 Universal Unique Identifier (v4) generation.  Gas cost of appriximately 80,000
 gas per uuid.
 
+https://en.wikipedia.org/wiki/Universally_unique_identifier
+
 
 ## Contract ABI
 
