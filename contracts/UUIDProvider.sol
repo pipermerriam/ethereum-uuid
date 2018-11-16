@@ -112,8 +112,13 @@ contract UUIDProvider {
             } else {
                 byte b = getByte();
                 bytes32 buf = keccak256(abi.encodePacked(prev, b));
-                uuid = setUUID4Bytes(bytes16(buf));
-                next = setUUID4Bytes(bytes16(uint(buf) / 2 ** 128));
+                bytes16[2] memory half = [bytes16(0), 0];
+                assembly {
+                    mstore(half, buf)
+                    mstore(add(half, 16), buf)
+                }
+                uuid = setUUID4Bytes(half[0]);
+                next = setUUID4Bytes(half[1]);
             }
         }
         seen[uuid] = true;
