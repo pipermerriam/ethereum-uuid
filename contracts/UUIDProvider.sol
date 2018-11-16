@@ -47,12 +47,11 @@ contract UUIDProvider {
         bytes32 key = getEntropy();
         if (key == 0x0) return false;
         for (uint i = 0; i < 32; i++) {
-            entropy.push(byte(key));
-            key = bytes32(uint(key) / 2**8);
+            entropy.push(key[i]);
         }
         return true;
     }
-
+    
     function getEntropy() internal view returns (bytes32 key) {
         for (uint i = 1; i < 256; i++) {
             key = blockhash(block.number - i);
