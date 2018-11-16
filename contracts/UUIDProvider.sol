@@ -111,8 +111,8 @@ contract UUIDProvider {
                 uuid = next;
                 next = 0x0;
             } else {
-                var b = getByte();
-                bytes32 buf = sha3(prev, b);
+                byte b = getByte();
+                bytes32 buf = keccak256(abi.encodePacked(prev, b));
                 uuid = setUUID4Bytes(bytes16(buf));
                 next = setUUID4Bytes(bytes16(uint(buf) / 2 ** 128));
             }
