@@ -2,20 +2,61 @@ pragma solidity ^0.4.25;
 
 
 contract UUIDProvider {
-    constructor() public {
-        seen[0x0] = true;
-        min_entropy = 32;
-        addEntropy();
-    }
 
     bytes public entropy;
     uint public min_entropy;
 
-    mapping (bytes32 => bool) used;
+    bytes16 public prev;
+    bytes16 public next;
+
+    bytes16[] public collisions;
+
+    mapping (bytes32 => bool) internal usedEntropies;
+    mapping (bytes16 => bool) internal usedUUIDs;
 
     // Actual cost is about 500,000 gas so we will only try to increase the
     // entropy when we've been provided enough gas.
     uint constant ADD_ENTROPY_GAS = 750000;
+
+    event UUID(bytes16 uuid);
+
+
+    constructor() public {
+        usedUUIDs[0x0] = true;
+        min_entropy = 32;
+        addEntropy();
+    }
+
+    function UUID4() public returns (bytes16 uuid) {
+        while (usedUUIDs[uuid]) {
+            if (uuid != 0x0) {
+                collisions.push(uuid);
+            }
+
+            if (next != 0x0) {
+                uuid = next;
+                next = 0x0;
+            } else {
+                byte b = getByte();
+                bytes32 buf = keccak256(abi.encodePacked(prev, b));
+                bytes16[2] memory half = [bytes16(0), 0];
+                assembly {
+                    mstore(half, buf)
+                    mstore(add(half, 16), buf)
+                }
+                uuid = setUUID4Bytes(half[0]);
+                next = setUUID4Bytes(half[1]);
+            }
+        }
+        usedUUIDs[uuid] = true;
+        emit UUID(uuid);
+        prev = uuid;
+        return uuid;
+    }
+
+    function collisionCount() public view returns (uint) {
+        return collisions.length;
+    }
 
     function getByte() internal returns (byte b) {
         /*
@@ -55,76 +96,36 @@ contract UUIDProvider {
     function getEntropy() internal view returns (bytes32 key) {
         for (uint i = 1; i < 256; i++) {
             key = blockhash(block.number - i);
-            if (!used[key]) return key;
+            if (!usedEntropies[key]) return key;
         }
         key = keccak256(abi.encodePacked(now));
-        if (!used[key]) return key;
+        if (!usedEntropies[key]) return key;
 
         key = keccak256(abi.encodePacked(gasleft()));
-        if (!used[key]) return key;
+        if (!usedEntropies[key]) return key;
 
         key = keccak256(abi.encodePacked(block.difficulty));
-        if (!used[key]) return key;
+        if (!usedEntropies[key]) return key;
 
         key = keccak256(abi.encodePacked(tx.origin));
-        if (!used[key]) return key;
+        if (!usedEntropies[key]) return key;
 
         key = keccak256(abi.encodePacked(msg.sender));
-        if (!used[key]) return key;
+        if (!usedEntropies[key]) return key;
 
         key = keccak256(abi.encodePacked(block.coinbase));
-        if (!used[key]) return key;
+        if (!usedEntropies[key]) return key;
 
         key = keccak256(abi.encodePacked(block.gaslimit));
-        if (!used[key]) return key;
+        if (!usedEntropies[key]) return key;
 
         key = keccak256(abi.encodePacked(tx.gasprice));
-        if (!used[key]) return key;
+        if (!usedEntropies[key]) return key;
 
         key = keccak256(abi.encodePacked(address(this)));
-        if (!used[key]) return key;
+        if (!usedEntropies[key]) return key;
 
         return 0x0;
-    }
-
-    mapping (bytes16 => bool) seen;
-
-    event UUID(bytes16 uuid);
-
-    bytes16 public prev;
-    bytes16 public next;
-
-    bytes16[] public collisions;
-
-    function collisionCount() public view returns (uint) {
-        return collisions.length;
-    }
-
-    function UUID4() public returns (bytes16 uuid) {
-        while (seen[uuid]) {
-            if (uuid != 0x0) {
-                collisions.push(uuid);
-            }
-
-            if (next != 0x0) {
-                uuid = next;
-                next = 0x0;
-            } else {
-                byte b = getByte();
-                bytes32 buf = keccak256(abi.encodePacked(prev, b));
-                bytes16[2] memory half = [bytes16(0), 0];
-                assembly {
-                    mstore(half, buf)
-                    mstore(add(half, 16), buf)
-                }
-                uuid = setUUID4Bytes(half[0]);
-                next = setUUID4Bytes(half[1]);
-            }
-        }
-        seen[uuid] = true;
-        emit UUID(uuid);
-        prev = uuid;
-        return uuid;
     }
 
     function setUUID4Bytes(bytes16 v) internal pure returns (bytes16) {
