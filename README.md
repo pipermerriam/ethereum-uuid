@@ -1,3 +1,5 @@
+> **WARNING** This library is not maintained.  Feel free to fork it and do as you please.
+
 # Ethereum UUID v4 Provider
 
 Available @ `0xbb17fcd3f0be84478c4772cdb1035089aa36d4d1`
